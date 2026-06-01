@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, Coffee } from 'lucide-react';
 
-const Login = ({ setCurrentView }) => {
+const Login = ({ setCurrentView, setUserRole }) => {
   const [role, setRole] = useState('shopper');
 
   const handleLogin = (e) => {
     e.preventDefault();
+    setUserRole(role);
     if (role === 'cafe') {
       setCurrentView('cafe-portal');
     } else if (role === 'shopper') {
       setCurrentView('eco-market');
-    } else {
-      setCurrentView('bridge');
+    } else if (role === 'producer') {
+      setCurrentView('producer-portal');
     }
   };
 

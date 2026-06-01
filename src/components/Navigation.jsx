@@ -1,18 +1,36 @@
 import React, { useState } from 'react';
-import { Coffee, Map, Store, LogIn, Menu, X } from 'lucide-react';
+import { Coffee, Map, Store, LogIn, LogOut, Menu, X, User } from 'lucide-react';
 
-const Navigation = ({ currentView, setCurrentView }) => {
+const Navigation = ({ currentView, setCurrentView, userRole, setUserRole }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { id: 'home', label: 'Home', icon: <Coffee className="w-5 h-5 mr-1" /> },
-    { id: 'bridge', label: 'The Bridge', icon: <Map className="w-5 h-5 mr-1" /> },
-    { id: 'eco-market', label: 'Eco-Market', icon: <Store className="w-5 h-5 mr-1" /> },
-    { id: 'cafe-portal', label: 'Cafe Portal', icon: <Coffee className="w-5 h-5 mr-1" /> },
-  ];
+  // Dynamic Navigation Items based on userRole
+  let navItems = [{ id: 'home', label: 'Home', icon: <Coffee className="w-5 h-5 mr-1" /> }];
+
+  if (userRole === 'cafe') {
+    navItems.push({ id: 'cafe-portal', label: 'Cafe Dashboard', icon: <Store className="w-5 h-5 mr-1" /> });
+    navItems.push({ id: 'bridge', label: 'The Bridge', icon: <Map className="w-5 h-5 mr-1" /> });
+  } else if (userRole === 'shopper') {
+    navItems.push({ id: 'eco-market', label: 'Eco-Market', icon: <Store className="w-5 h-5 mr-1" /> });
+  } else if (userRole === 'producer') {
+    navItems.push({ id: 'producer-portal', label: 'Producer Portal', icon: <User className="w-5 h-5 mr-1" /> });
+    navItems.push({ id: 'bridge', label: 'The Bridge', icon: <Map className="w-5 h-5 mr-1" /> });
+  }
 
   const handleNavClick = (id) => {
     setCurrentView(id);
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleAuthAction = () => {
+    if (userRole) {
+      // Logout
+      setUserRole(null);
+      setCurrentView('home');
+    } else {
+      // Login
+      setCurrentView('login');
+    }
     setIsMobileMenuOpen(false);
   };
 
@@ -49,18 +67,29 @@ const Navigation = ({ currentView, setCurrentView }) => {
             ))}
           </nav>
 
-          {/* Login Button (Desktop) */}
+          {/* Auth Button (Desktop) */}
           <div className="hidden md:flex">
             <button
-              onClick={() => handleNavClick('login')}
+              onClick={handleAuthAction}
               className={`flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                currentView === 'login'
-                  ? 'bg-primary-dark text-white'
-                  : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'
+                userRole 
+                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                  : currentView === 'login'
+                    ? 'bg-primary-dark text-white'
+                    : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'
               }`}
             >
-              <LogIn className="w-4 h-4 mr-2" />
-              Sign In
+              {userRole ? (
+                <>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout ({userRole})
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign In
+                </>
+              )}
             </button>
           </div>
 
@@ -95,15 +124,26 @@ const Navigation = ({ currentView, setCurrentView }) => {
               </button>
             ))}
             <button
-              onClick={() => handleNavClick('login')}
+              onClick={handleAuthAction}
               className={`flex items-center w-full px-3 py-4 rounded-md text-base font-medium mt-4 ${
-                currentView === 'login'
-                  ? 'bg-primary text-white'
-                  : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'
+                userRole 
+                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                  : currentView === 'login'
+                    ? 'bg-primary text-white'
+                    : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'
               }`}
             >
-              <LogIn className="w-5 h-5 mr-2" />
-              Sign In
+              {userRole ? (
+                <>
+                  <LogOut className="w-5 h-5 mr-2" />
+                  Logout
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5 mr-2" />
+                  Sign In
+                </>
+              )}
             </button>
           </div>
         </div>
