@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Leaf, Flame, Sparkles, Coffee, Store, Heart } from 'lucide-react';
+import { ShoppingCart, Leaf, Flame, Sparkles, Coffee, Store, Heart, X, CheckCircle2, Trash2, ArrowRight } from 'lucide-react';
 
 const EcoMarket = () => {
-  const [cartCount, setCartCount] = useState(0);
   const [addedItems, setAddedItems] = useState(new Set());
+  const [cartItems, setCartItems] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [checkoutState, setCheckoutState] = useState('idle'); // 'idle', 'processing', 'success'
 
   const products = [
     {
       id: 1,
       title: 'Bio-Espresso Cup',
       source: 'Brew Mood Alsancak',
-      price: '145 TL',
+      price: 145,
       icon: <Coffee className="w-16 h-16 text-secondary" />,
       color: 'bg-orange-50',
       tag: 'Upcycled',
@@ -19,7 +21,7 @@ const EcoMarket = () => {
       id: 2,
       title: 'Soil Nutrient (2kg)',
       source: 'Two Cup Bornova',
-      price: '80 TL',
+      price: 80,
       icon: <Leaf className="w-16 h-16 text-primary" />,
       color: 'bg-green-50',
       tag: 'Compost',
@@ -28,7 +30,7 @@ const EcoMarket = () => {
       id: 3,
       title: 'Coffee Body Scrub',
       source: 'Coffee Güzelyalı',
-      price: '110 TL',
+      price: 110,
       icon: <Sparkles className="w-16 h-16 text-purple-600" />,
       color: 'bg-purple-50',
       tag: 'Beauty',
@@ -37,29 +39,57 @@ const EcoMarket = () => {
       id: 4,
       title: 'Eco Bio-Fuel Pellets',
       source: 'Izmir Bio-Factory',
-      price: '220 TL',
+      price: 220,
       icon: <Flame className="w-16 h-16 text-red-500" />,
       color: 'bg-red-50',
       tag: 'Energy',
     },
   ];
 
-  const handleAddToCart = (id) => {
-    setCartCount(prev => prev + 1);
-    setAddedItems(prev => new Set(prev).add(id));
-    
-    // Reset the "Added" state after 2 seconds for feedback effect
+  const handleAddToCart = (product) => {
+    // Visual feedback
+    setAddedItems(prev => new Set(prev).add(product.id));
     setTimeout(() => {
       setAddedItems(prev => {
         const next = new Set(prev);
-        next.delete(id);
+        next.delete(product.id);
         return next;
       });
     }, 2000);
+
+    // Add to cart state
+    setCartItems(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => 
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
   };
 
+  const handleRemoveFromCart = (id) => {
+    setCartItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleCheckout = () => {
+    setCheckoutState('processing');
+    setTimeout(() => {
+      setCheckoutState('success');
+      setCartItems([]);
+      setTimeout(() => {
+        setCheckoutState('idle');
+        setIsCartOpen(false);
+      }, 3000);
+    }, 1500);
+  };
+
+  const totalCartItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const totalCartPrice = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
   return (
-    <div className="max-w-6xl mx-auto animate-in fade-in pb-10">
+    <div className="max-w-6xl mx-auto animate-in fade-in pb-10 relative">
       
       {/* Header & Cart */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-4">
@@ -68,10 +98,19 @@ const EcoMarket = () => {
           <p className="text-text-muted mt-1">Shop premium upcycled products made from reclaimed coffee.</p>
         </div>
         
-        <div className="bg-white rounded-full px-6 py-3 shadow-md border border-gray-100 flex items-center group cursor-pointer hover:border-primary transition-colors">
+        <div 
+          onClick={() => setIsCartOpen(true)}
+          className="bg-white rounded-full px-6 py-3 shadow-md border border-gray-100 flex items-center group cursor-pointer hover:border-primary transition-colors relative"
+        >
           <ShoppingCart className="w-6 h-6 text-secondary group-hover:text-primary transition-colors mr-3" />
-          <span className="font-bold text-lg">{cartCount} Items</span>
+          <span className="font-bold text-lg">{totalCartItems} Items</span>
           <span className="ml-2 text-text-muted">in Cart</span>
+          
+          {totalCartItems > 0 && (
+            <div className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold animate-bounce">
+              {totalCartItems}
+            </div>
+          )}
         </div>
       </div>
 
@@ -114,9 +153,9 @@ const EcoMarket = () => {
               </p>
               
               <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
-                <span className="font-bold text-2xl text-secondary">{product.price}</span>
+                <span className="font-bold text-2xl text-secondary">{product.price} TL</span>
                 <button
-                  onClick={() => handleAddToCart(product.id)}
+                  onClick={() => handleAddToCart(product)}
                   className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md ${
                     addedItems.has(product.id)
                       ? 'bg-primary-dark text-white'
@@ -130,6 +169,113 @@ const EcoMarket = () => {
           </div>
         ))}
       </div>
+
+      {/* Cart Sidebar Overlay / Modal */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsCartOpen(false)}
+          ></div>
+          
+          {/* Sidebar */}
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Cart Header */}
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-2xl font-bold text-secondary flex items-center">
+                <ShoppingCart className="w-6 h-6 mr-3 text-primary" />
+                Your Cart
+              </h2>
+              <button 
+                onClick={() => setIsCartOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-700 bg-white rounded-full shadow-sm hover:shadow transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Cart Items */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {cartItems.length === 0 && checkoutState === 'idle' ? (
+                <div className="text-center text-gray-400 flex flex-col items-center justify-center h-full space-y-4">
+                  <ShoppingCart className="w-16 h-16 opacity-20" />
+                  <p className="text-lg">Your cart is empty.</p>
+                  <button 
+                    onClick={() => setIsCartOpen(false)}
+                    className="text-primary font-bold hover:underline"
+                  >
+                    Continue Shopping
+                  </button>
+                </div>
+              ) : checkoutState === 'success' ? (
+                <div className="text-center text-green-600 flex flex-col items-center justify-center h-full space-y-4 animate-in zoom-in duration-500">
+                  <CheckCircle2 className="w-20 h-20" />
+                  <h3 className="text-2xl font-bold text-gray-800">Order Placed!</h3>
+                  <p className="text-text-muted">Thank you for supporting the circular economy.</p>
+                </div>
+              ) : (
+                cartItems.map(item => (
+                  <div key={item.id} className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${item.color}`}>
+                      <div className="scale-75">{item.icon}</div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-800">{item.title}</h4>
+                      <p className="text-sm text-text-muted">{item.price} TL x {item.quantity}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-secondary mb-2">{item.price * item.quantity} TL</p>
+                      <button 
+                        onClick={() => handleRemoveFromCart(item.id)}
+                        className="text-red-400 hover:text-red-600 transition-colors p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Cart Footer / Checkout */}
+            {cartItems.length > 0 && checkoutState !== 'success' && (
+              <div className="p-6 border-t border-gray-100 bg-white">
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-gray-600 font-medium text-lg">Subtotal</span>
+                  <span className="text-3xl font-bold text-secondary">{totalCartPrice} TL</span>
+                </div>
+                
+                <button 
+                  onClick={handleCheckout}
+                  disabled={checkoutState === 'processing'}
+                  className={`w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center transition-all shadow-lg ${
+                    checkoutState === 'processing' 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-primary text-white hover:bg-primary-dark hover:-translate-y-1'
+                  }`}
+                >
+                  {checkoutState === 'processing' ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : (
+                    <>
+                      Checkout Securely
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
